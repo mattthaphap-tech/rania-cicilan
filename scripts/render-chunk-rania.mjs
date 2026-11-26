@@ -18,7 +18,14 @@ const chromiumOptions = { gl: "swangle" };
 const common = { browserExecutable, chromiumOptions };
 
 console.log("Bundling Remotion...");
-const serveUrl = await bundle({ entryPoint: path.resolve("src/index.ts"), publicDir: path.resolve("public") });
+// Mirror remotion.config.ts: bundle() does NOT load the config, so the
+// @story webpack alias must be passed explicitly, or webpack fails with
+// "Can't resolve '@story/takes'". (Run #1 failed on exactly this.)
+const webpackOverride = (c) => {
+  const v = process.env.VIDEO || "02_rania_cicilan";
+  return { ...c, resolve: { ...c.resolve, alias: { ...(c.resolve?.alias ?? {}), "@story": path.resolve(process.cwd(), "src/videos", v) } } };
+};
+const serveUrl = await bundle({ entryPoint: path.resolve("src/index.ts"), publicDir: path.resolve("public"), webpackOverride });
 
 const comp = await selectComposition({ serveUrl, id: "Video", ...common });
 const out = path.resolve(`out/rania/chunks/chunk-${start}-${end}.mp4`);
